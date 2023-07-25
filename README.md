@@ -122,6 +122,7 @@ python ./Amos22/run.py \
 ```
 
 ## Single GPU Test
+### BraTs 2021
 ```bash
 python ./BraTS21/test.py \
 --json_list=./BraTS21/jsons/brats21_folds.json \
