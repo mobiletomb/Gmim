@@ -72,16 +72,17 @@ parser.add_argument("--best_model")
 parser.add_argument("--save_seg", action='store_true')
 
 def visual(label, seg, output_dir): 
+    _, _, d = label.shape
     cmap = plt.cm.Paired
     
     # 将类别对应到指定的颜色，如果需要修改透明背景时，将每一个颜色的最后一维设置为 0
-    seg_ = np.zeros((seg[:, :, i].shape[0], 
-                     seg[:, :, i].shape[1],
-                     seg[:, :, i].shape[2], 
+    seg_ = np.zeros((seg.shape[0], 
+                     seg.shape[1],
+                     seg.shape[2], 
                      4)) 
-    label_ = np.zeros((seg[:, :, i].shape[0], 
-                     seg[:, :, i].shape[1],
-                     seg[:, :, i].shape[2], 
+    label_ = np.zeros((seg.shape[0], 
+                     seg.shape[1],
+                     seg.shape[2], 
                      4))
     
     for i in range(16):
@@ -92,7 +93,7 @@ def visual(label, seg, output_dir):
     label = label_
     
     os.makedirs(output_dir, exist_ok=True)
-    _, _, d = label.shape
+
     
     for i in range(0, d, 5):
         seg_name = os.path.join(output_dir, f'seg_{i}.png')
