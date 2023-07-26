@@ -62,8 +62,30 @@ parser.add_argument("--device", default='cpu', )
 
 
 def visual(label, seg, output_dir):
-    os.makedirs(output_dir, exist_ok=True)
     _, _, d = label.shape
+    cmap = plt.cm.Paired
+    
+    # 将类别对应到指定的颜色，如果需要修改透明背景时，将每一个颜色的最后一维设置为 0
+    seg_ = np.zeros((seg.shape[0], 
+                     seg.shape[1],
+                     seg.shape[2], 
+                     4)) 
+    label_ = np.zeros((seg.shape[0], 
+                     seg.shape[1],
+                     seg.shape[2], 
+                     4))
+
+    seg_[seg==0] = cmap(0)
+    label_[label==0] = cmap(0)
+    for i, j in enumerate([2, 1, 4]):
+        seg_[seg==j] = cmap(i + 1)
+        label_[label==j] = cmap(i)
+        
+    seg = seg_
+    label = label_
+    
+    os.makedirs(output_dir, exist_ok=True)
+
     for i in range(0, d, 5):
 
         seg_name = os.path.join(output_dir, f'seg_{i}.png')
