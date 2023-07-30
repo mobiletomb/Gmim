@@ -75,10 +75,8 @@ def visual(label, seg, output_dir):
                      seg.shape[2], 
                      4))
 
-    seg_[seg==0] = cmap(0)
-    label_[label==0] = cmap(0)
-    for i, j in enumerate([2, 1, 4]):
-        seg_[seg==j] = cmap(i + 1)
+    for i, j in enumerate([0, 2, 1, 4]):
+        seg_[seg==j] = cmap(i)
         label_[label==j] = cmap(i)
         
     seg = seg_
