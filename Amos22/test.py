@@ -85,9 +85,23 @@ def visual(label, seg, output_dir):
                      seg.shape[2], 
                      4))
     
-    for i in range(16):
+    for i in range(12):
         seg_[seg==i] = cmap(i)
         label_[label==i] = cmap(i)
+
+    cmap = plt.cm.Pastel1
+
+    seg_[seg==12] = cmap(2)
+    label_[label==12] = cmap(2)
+    
+    seg_[seg==13] = cmap(7)
+    label_[label==13] = cmap(7)
+    
+    seg_[seg==14] = cmap(5)
+    label_[label==14] = cmap(5)
+    
+    seg_[seg==15] = cmap(6)
+    label_[label==15] = cmap(6)
         
     seg = seg_
     label = label_
