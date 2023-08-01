@@ -14,6 +14,10 @@ The architecture of our method is illustrated below: It consists of two branches
 # Installing Dependencies
 Dependencies can be installed using:
 ``` bash
+conda env create -n <env_name> -f conda.yml
+```
+or using:
+``` bash
 pip install -r requirements.txt
 ```
 
