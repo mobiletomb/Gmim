@@ -201,8 +201,6 @@ def test(args):
             
             for cls in range(15):
                 if label_posted[cls + 1].sum() == 0:
-                    results_csv[f'DSC {SementicCls[i]}'] = 0
-                    results_csv[f'NSD {SementicCls[i]}'] = 0
                     dice_cls = 0
                     nsd_cls = 0
                 else:
