@@ -200,9 +200,6 @@ class PretrainDatasetMR(BasicDataset):
 
             image_ = sitk.ReadImage(image_path)
 
-            # todo del
-            image_ = sitk.GetArrayFromImage(image_)[10:140, 30:200, 30:200]
-
             image_ = np.moveaxis(image_, (0, 1, 2), (2, 1, 0))
 
             image.append(image_)
