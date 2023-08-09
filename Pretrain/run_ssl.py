@@ -58,6 +58,7 @@ def main():
                 contrastive1_x, contrastive1_y, rec_x1 = model(x, y)
                 if args.invis_patches:
                     x = model.swinViT.mask_layer.get_masked_gt(x)
+                    rec_x1 = model.swinViT.mask_layer.get_masked_gt(rec_x1)
                 loss, contrastive_loss, rec_loss = loss_function(contrastive1_x, contrastive1_y, rec_x1, x)
 
             loss_train.append(loss.item())
@@ -140,6 +141,7 @@ def main():
                     contrastive1_x, contrastive1_y, rec_x1 = model(val_inputs, val_inputs_y)
                     if args.invis_patches:
                         val_inputs = model.swinViT.mask_layer.get_masked_gt(val_inputs)
+                        rec_x1 = model.swinViT.mask_layer.get_masked_gt(rec_x1)
                     loss, contrastive_loss, rec_loss = loss_function(contrastive1_x, contrastive1_y, rec_x1, val_inputs)
                 loss_val.append(loss.item())
                 loss_val_recon.append(rec_loss.item())
