@@ -22,10 +22,12 @@ from monai.inferers import sliding_window_inference
 from monai.networks.nets import SwinUNETR
 from monai.transforms import AsDiscrete
 
-from monai.metrics import DiceMetric, compute_surface_dice
+from monai.metrics import DiceMetric, compute_surface_dice, SurfaceDistanceMetric
 import pandas as pd
 import matplotlib.pyplot as plt
 from time import time
+from utils.utils import AverageMeter, distributed_all_gather
+from monai.utils.enums import MetricReduction
 
 
 parser = argparse.ArgumentParser(description="Swin UNETR segmentation pipeline")
@@ -119,7 +121,8 @@ def visual(label, seg, output_dir):
 def test(args):
     args.test_mode = True
     
-    csv_path = os.path.join(args.output_dir, f'{str(args.fold)}.csv')
+    dsc_csv_path = os.path.join(args.output_dir, f'{str(args.fold)}_dsc.csv')
+    nsd_csv_path = os.path.join(args.output_dir, f'{str(args.fold)}_nsd.csv')
     seg_path = os.path.join(args.output_dir, str(args.fold))
 
     os.makedirs(seg_path, exist_ok=True)
@@ -136,8 +139,12 @@ def test(args):
     post_label = AsDiscrete(to_onehot=args.out_channels)
     post_pred = AsDiscrete(argmax=True, to_onehot=args.out_channels)
 
-    Dice = DiceMetric(include_background=True)
-
+    Dice = DiceMetric(include_background=True, reduction=MetricReduction.MEAN_BATCH, get_not_nans=True)
+    Nsd = SurfaceDistanceMetric(include_background=True, reduction=MetricReduction.MEAN_BATCH, get_not_nans=True)
+    
+    Dice_acc = AverageMeter()
+    Nsd_acc = AverageMeter()
+    
     model = SwinUNETR(
         img_size=128,
         in_channels=args.in_channels,
@@ -165,19 +172,23 @@ def test(args):
 
     SementicCls = ["spleen", "right kidney", "left kidney",
                     "gall bladder", "esophagus", "liver",
-                    "stomach", "arota", "postcava", "pancreas",
+                    "stomach", "aorta", "postcava", "pancreas",
                     "right adrenal gland", "left adrenal gland",
                     "duodenum", "bladder", "prostate/uterus"]
     
-    results_csv = {
+    results_csv_dsc = {
         'Id': [],
         'Mean Dice': [],
+    }
+    
+    results_csv_nsd = {
+        'Id': [],
         'Mean NSD': [],
     }
     
     for cls in range(15):
-        results_csv[f'DSC {SementicCls[cls]}'] = []
-        results_csv[f'NSD {SementicCls[cls]}'] = []
+        results_csv_dsc[f'DSC {SementicCls[cls]}'] = []
+        results_csv_nsd[f'NSD {SementicCls[cls]}'] = []
 
     with torch.no_grad():
         for i, batch in enumerate(test_loader):
@@ -187,62 +198,53 @@ def test(args):
             path = batch['path']
 
             img_name = path[0].split("/")[-1].split("_")[1][:-7]
-
+            results_csv_dsc['Id'].append(img_name)
+            results_csv_nsd['Id'].append(img_name)
             print("Inference on case {}".format(img_name))
             logits = model_inferer(image)
-            seg_out = post_pred(logits[0])
-
-            label_posted = post_label(label[0])
             infer_time = time()
-            print("Get Metric {} | Time {}".format(img_name, np.round(infer_time-start_time, 4)))
-            cnt = 0
-            dsc_case = []
-            nsd_case = []
             
-            for cls in range(15):
-                if label_posted[cls + 1].sum() == 0:
-                    dice_cls = 0
-                    nsd_cls = 0
-                else:
-                    dice_cls = Dice(seg_out[cls + 1].unsqueeze(0).unsqueeze(0), 
-                                    label_posted[cls + 1].unsqueeze(0).unsqueeze(0))[0]
+            print("Inference complete:", np.round(infer_time-start_time, 4))
+            
+            val_labels_convert = [post_label(val_label_tensor) for val_label_tensor in label]
+            val_output_convert = [post_pred(val_pred_tensor) for val_pred_tensor in logits]
+            
+            Dice.reset()
+            Dice(y_pred=val_output_convert, y=val_labels_convert)
+            dice_acc, not_nans = Dice.aggregate()
+            dice_acc = dice_acc.cuda()
 
-                    dice_cls = dice_cls.get_array().item()
-                    nsd_cls = compute_surface_dice(seg_out[cls + 1].unsqueeze(0).unsqueeze(0), 
-                                                label_posted[cls + 1].unsqueeze(0).unsqueeze(0), 
-                                                include_background=True,
-                                                class_thresholds=[4])[0].detach().cpu().item()
-                    
-                    dice_cls = np.round(dice_cls, 4)
-                    nsd_cls = np.round(nsd_cls, 4)
-                    
-                    cnt += 1
-                    
-                results_csv[f'DSC {SementicCls[i]}'].append(dice_cls) 
-                results_csv[f'NSD {SementicCls[i]}'].append(nsd_cls)  
-                
-                dsc_case.append(dice_cls)
-                nsd_case.append(nsd_cls)
-                    
-            results_csv['Id'].append(img_name) 
-            results_csv['Mean Dice'].append(np.divide(np.sum(dsc_case), cnt)) 
-            results_csv['Mean NSD'].append(np.divide(np.sum(nsd_case), cnt))
+            Dice_acc.update(dice_acc.cpu().numpy(), n=not_nans.cpu().numpy())
+            
+            Nsd.reset()
+            Nsd(y_pred=val_output_convert, y=val_labels_convert)
+            nsd_acc, not_nans = Nsd.aggregate()
+            nsd_acc = nsd_acc.cuda()
 
+            Nsd_acc.update(nsd_acc.cpu().numpy(), n=not_nans.cpu().numpy())
             
-            seg_out = seg_out.detach().cpu().numpy()
-            label = label[0][0].cpu().numpy()
-            
-            seg = np.zeros_like(seg_out[0])
-            for i in range(15):
-                seg[seg_out[i + 1] == 1] = i + 1
-            
-            path = os.path.join(seg_path, img_name)
             end_time = time()
             print(f"Save image to {path} | Metric Time: {np.round(end_time-infer_time, 4)}")
-            visual(label, seg, path)
-                
-        csv = pd.DataFrame(results_csv, index=results_csv['Id'])
-        csv.to_csv(csv_path, index=False)
+
+        dice_acc = Dice_acc.avg
+        nsd_acc = Nsd_acc.avg
+        
+        for i, c in enumerate(SementicCls):
+            print(f"Dsc {c}:", round(dice_acc[i + 1], 3))
+            results_csv_dsc[f'DSC {SementicCls[i]}'].append(round(dice_acc[i + 1], 3)) 
+
+        for i, c in enumerate(SementicCls):
+            print(f"Nsd {c}:", round(nsd_acc[i + 1], 3))
+            results_csv_nsd[f'NSD {SementicCls[i]}'].append(round(nsd_acc[i + 1], 3)) 
+
+        results_csv_dsc['Mean Dice'].append(np.mean(dice_acc)) 
+        results_csv_nsd['Mean NSD'].append(np.mean(nsd_acc))
+
+        csv = pd.DataFrame(results_csv_dsc, index=results_csv_dsc['Id'])
+        csv.to_csv(dsc_csv_path, index=False)
+        
+        csv = pd.DataFrame(results_csv_nsd, index=results_csv_nsd['Id'])
+        csv.to_csv(nsd_csv_path, index=False)
 
         print("Finished inference!")
 
@@ -250,5 +252,3 @@ def test(args):
 if __name__ == "__main__":
     args = parser.parse_args()
     test(args)
-
-
