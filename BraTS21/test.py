@@ -232,14 +232,14 @@ def test(args):
             seg_out = seg_out.detach().cpu().numpy()
 
             seg_out = seg_out[0]
-            seg_out_ = np.zeros_like(seg_out[0])
+            seg_out_ = np.zeros_like(seg_out[0]).astype(np.uint8)
 
             seg_out_[seg_out[1] == 1] = 2
             seg_out_[seg_out[0] == 1] = 1
             seg_out_[seg_out[2] == 1] = 4
                 
             label = label[0]
-            label_ = np.zeros_like(label[0])
+            label_ = np.zeros_like(label[0]).astype(np.uint8)
             
             label_[label[1] == 1] = 2
             label_[label[0] == 1] = 1
