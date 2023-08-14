@@ -23,7 +23,7 @@ pip install -r requirements.txt
 
 # Pre-trained Models
 
-We use [Swin UNETER](https://monai.io/research/swin-unetr) as our baseline and provied the self-supervised pre-trained encoder, named SwinViT in this <a href=""> link</a>.
+We use [Swin UNETER](https://monai.io/research/swin-unetr) as our baseline and provied the self-supervised pre-trained encoder, named SwinViT in this <a href="https://drive.google.com/file/d/1r7nipy-Uph4cu8ZSA9TGaDUpVB7sIrNd/view?usp=drive_link"> link</a>.
 
 In the following, we describe how to pre-train, finetune, and train from scratch.
 
