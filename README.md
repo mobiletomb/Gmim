@@ -3,7 +3,7 @@ This is the Pytorch implement of our
 
 **GMiM: Adaptive and Hierarchical Self-supervised Pre-Training for 3D Medical Image Segmentation**
 
-Our code is heavily based on [Swin UNETER](https://monai.io/research/swin-unetr) and MONAI. Thanks for open source.
+Our code is heavily based on [Swin UNETR](https://monai.io/research/swin-unetr) and MONAI. Thanks for open source.
 
 # Model Overview
 The architecture of our method is illustrated below: It consists of two branches, and learned representations from multi-pretext tasks.
@@ -23,7 +23,7 @@ pip install -r requirements.txt
 
 # Pre-trained Models
 
-We use [Swin UNETER](https://monai.io/research/swin-unetr) as our baseline and provide the self-supervised pre-trained encoder, named SwinViT in this <a href="https://drive.google.com/file/d/1r7nipy-Uph4cu8ZSA9TGaDUpVB7sIrNd/view?usp=drive_link"> amos_link</a>. and <a href="https://drive.google.com/file/d/1_XzS-nx4W5JGq6nfbI6sIQWUHldWYpIg/view?usp=drive_link"> brats_link</a>. 
+We use [Swin UNETR](https://monai.io/research/swin-unetr) as our baseline and provide the self-supervised pre-trained encoder, named SwinViT in this <a href="https://drive.google.com/file/d/1r7nipy-Uph4cu8ZSA9TGaDUpVB7sIrNd/view?usp=drive_link"> amos_link</a>. and <a href="https://drive.google.com/file/d/1_XzS-nx4W5JGq6nfbI6sIQWUHldWYpIg/view?usp=drive_link"> brats_link</a>. 
 
 In the following, we describe how to pre-train, finetune, and train from scratch.
 
