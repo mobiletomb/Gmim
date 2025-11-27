@@ -151,5 +151,16 @@ python ./Amos22/test.py \
 # Citation
 If you find this repository useful, please consider citing our paper:
 
+```bash
+@article{qi2024gmim,
+  title={GMIM: self-supervised pre-training for 3D medical image segmentation with adaptive and hierarchical masked image modeling},
+  author={Qi, Liangce and Jiang, Zhengang and Shi, Weili and Qu, Feng and Feng, Guanyuan},
+  journal={Computers in Biology and Medicine},
+  volume={176},
+  pages={108547},
+  year={2024},
+  publisher={Elsevier}
+}
+```
 
 
